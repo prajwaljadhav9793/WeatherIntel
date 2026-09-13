@@ -1,0 +1,6 @@
+{
+  "name": "WeatherIntel India",
+  "description": "National Weather Big Data Analytics Platform - Real-Time Weather Intelligence for a Safer India",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

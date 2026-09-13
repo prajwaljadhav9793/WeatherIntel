@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #F5FAFC;
+    color: #12313D;
+  }
+}
+
+/* Glassmorphism primitives */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 32px 0 rgba(7, 85, 107, 0.05);
+}
+
+.glass-panel-subtle {
+  background: rgba(255, 255, 255, 0.60);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(216, 234, 240, 0.7);
+  box-shadow: 0 4px 20px 0 rgba(8, 126, 155, 0.04);
+}
+
+.glass-dropdown {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(216, 234, 240, 0.85);
+  box-shadow: 0 16px 36px -4px rgba(7, 85, 107, 0.12);
+}
+
+/* Atmospheric subtle background */
+.atmospheric-bg {
+  background: radial-gradient(circle at 15% 20%, rgba(91, 191, 239, 0.12) 0%, transparent 40%),
+              radial-gradient(circle at 85% 65%, rgba(8, 126, 155, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 50% 90%, rgba(37, 191, 165, 0.06) 0%, transparent 45%),
+              #F5FAFC;
+}
+
+/* Pulse animation for live data & map markers */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Custom Leaflet styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  background-color: #EAF7FD;
+  outline: none;
+  z-index: 1;
+}
+
+.dark-monitor .leaflet-container,
+.dark .leaflet-container {
+  background-color: #071217 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(216, 234, 240, 0.9) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 32px rgba(7, 85, 107, 0.12) !important;
+  padding: 4px !important;
+  color: #12313D !important;
+}
+
+.dark-monitor .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-content-wrapper {
+  background: rgba(11, 23, 30, 0.95) !important;
+  border: 1px solid rgba(27, 53, 67, 0.9) !important;
+  color: #E0F2F7 !important;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.dark-monitor .leaflet-popup-tip,
+.dark .leaflet-popup-tip {
+  background: rgba(11, 23, 30, 0.95) !important;
+}
+
+/* Dark mode glass panel */
+.glass-panel-dark {
+  background: rgba(11, 25, 33, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(27, 53, 67, 0.75);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Full Website Dark Mode Overrides */
+html.dark,
+body.dark {
+  background-color: #061218;
+  color: #E0F2F7;
+  color-scheme: dark;
+}
+
+.dark .atmospheric-bg {
+  background: radial-gradient(circle at 15% 20%, rgba(91, 191, 239, 0.07) 0%, transparent 40%),
+              radial-gradient(circle at 85% 65%, rgba(8, 126, 155, 0.10) 0%, transparent 50%),
+              radial-gradient(circle at 50% 90%, rgba(37, 191, 165, 0.05) 0%, transparent 45%),
+              #061218 !important;
+}
+
+.dark .glass-panel {
+  background: rgba(10, 26, 36, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(25, 55, 73, 0.85) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45) !important;
+  color: #E0F2F7;
+}
+
+.dark .glass-panel-subtle {
+  background: rgba(10, 26, 36, 0.65) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(25, 55, 73, 0.7) !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .glass-dropdown {
+  background: rgba(9, 23, 32, 0.96) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(27, 58, 77, 0.85) !important;
+  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.65) !important;
+  color: #E0F2F7;
+}
+
+/* High readability text overrides in dark mode */
+.dark .text-\[\#12313D\] {
+  color: #EBF4F7 !important;
+}
+
+.dark .text-\[\#607B86\] {
+  color: #8AAABA !important;
+}
+
+.dark .text-\[\#07556B\] {
+  color: #5BBFEF !important;
+}
+
+/* Dark mode backgrounds for light surfaces */
+.dark .bg-white\/60,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90,
+.dark .bg-white {
+  background-color: rgba(12, 29, 40, 0.88) !important;
+}
+
+.dark .bg-\[\#EAF7FD\] {
+  background-color: rgba(14, 40, 56, 0.75) !important;
+}
+
+.dark .bg-\[\#F5FAFC\] {
+  background-color: #061218 !important;
+}
+
+.dark .border-\[\#D8EAF0\],
+.dark .border-\[\#D8EAF0\]\/60,
+.dark .border-\[\#D8EAF0\]\/70,
+.dark .border-\[\#D8EAF0\]\/80,
+.dark .border-\[\#D8EAF0\]\/90 {
+  border-color: rgba(26, 56, 74, 0.8) !important;
+}
+
+.dark .hover\:bg-white\/70:hover,
+.dark .hover\:bg-white\/80:hover,
+.dark .hover\:bg-white:hover {
+  background-color: rgba(18, 44, 60, 0.95) !important;
+}
+
+.dark .hover\:text-\[\#12313D\]:hover {
+  color: #FFFFFF !important;
+}
+
+/* Form controls in dark mode */
+.dark input,
+.dark select,
+.dark textarea {
+  color: #E0F2F7 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6C8E9F !important;
+}
+
+.dark option {
+  background-color: #0A1E29 !important;
+  color: #E0F2F7 !important;
+}
+
+/* Custom scrollbar in dark mode */
+.dark ::-webkit-scrollbar-thumb {
+  background: #1B3C4F;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #5BBFEF;
+}
+
+/* Custom pulse weather marker */
+.weather-marker-pin {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.weather-marker-pin .ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8EAF0;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5BBFEF;
+}
