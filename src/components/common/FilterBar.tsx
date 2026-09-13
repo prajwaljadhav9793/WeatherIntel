@@ -49,8 +49,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const hasActiveFilters =
     filters.event !== 'All' ||
     filters.state !== 'All' ||
+    filters.district !== 'All' ||
     filters.verification !== 'All' ||
-    filters.dateRange !== '24H';
+    filters.dateRange !== '24H' ||
+    (filters.searchQuery && filters.searchQuery.trim() !== '');
 
   return (
     <div className="glass-panel p-3 rounded-2xl shadow-xs border border-[#D8EAF0] flex flex-wrap items-center justify-between gap-3">

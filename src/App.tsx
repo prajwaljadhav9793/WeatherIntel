@@ -45,6 +45,7 @@ export function MainWeatherPlatform() {
     state: 'All',
     district: 'All',
     verification: 'All',
+    searchQuery: '',
   });
 
   const handleFilterChange = (newFilters: Partial<FilterState>) => {
@@ -59,6 +60,7 @@ export function MainWeatherPlatform() {
       state: 'All',
       district: 'All',
       verification: 'All',
+      searchQuery: '',
     });
     setSelectedReport(null);
   };

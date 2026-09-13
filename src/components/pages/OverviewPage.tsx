@@ -35,10 +35,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   const handleSelectLiveEvent = (report: (typeof reports)[number]) => {
     onSelectReport(report);
     onFilterChange({
+      dateRange: '24H',
       event: report.event,
       state: 'All',
       district: 'All',
       verification: 'All',
+      searchQuery: '',
     });
   };
 
