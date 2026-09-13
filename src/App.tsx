@@ -35,7 +35,7 @@ export function MainWeatherPlatform() {
   const [currentPage, setCurrentPage] = useState<ActivePage>('overview');
   const [userRole, setUserRole] = useState<UserRole>('IMD Analyst');
   const [reports, setReports] = useState<WeatherReport[]>(MOCK_REPORTS);
-  const [selectedReport, setSelectedReport] = useState<WeatherReport | null>(MOCK_REPORTS[0]);
+  const [selectedReport, setSelectedReport] = useState<WeatherReport | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Global filters
@@ -49,6 +49,7 @@ export function MainWeatherPlatform() {
 
   const handleFilterChange = (newFilters: Partial<FilterState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
+    setSelectedReport(null);
   };
 
   const handleResetFilters = () => {
@@ -59,10 +60,15 @@ export function MainWeatherPlatform() {
       district: 'All',
       verification: 'All',
     });
+    setSelectedReport(null);
   };
 
   const handleSelectReport = (report: WeatherReport) => {
     setSelectedReport(report);
+  };
+
+  const handleClearSelectedReport = () => {
+    setSelectedReport(null);
   };
 
   const handleViewReportDetails = (report: WeatherReport) => {
@@ -119,6 +125,7 @@ export function MainWeatherPlatform() {
             reports={reports}
             selectedReport={selectedReport}
             onSelectReport={handleSelectReport}
+            onClearSelectedReport={handleClearSelectedReport}
             onViewReportDetails={handleViewReportDetails}
           />
         );

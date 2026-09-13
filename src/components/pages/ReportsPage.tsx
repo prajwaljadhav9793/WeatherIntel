@@ -64,6 +64,19 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({
     return matchesSearch && matchesCategory && matchesStatus && matchesSource;
   });
 
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    selectedCategory !== 'All' ||
+    selectedStatus !== 'All' ||
+    selectedSourceType !== 'All';
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setSelectedStatus('All');
+    setSelectedSourceType('All');
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Page Header */}
@@ -116,42 +129,53 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({
         </div>
 
         {/* Additional Dropdowns */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[#D8EAF0]/60 text-xs">
-          <div className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-xl border border-[#D8EAF0]">
-            <span className="text-[#607B86]">Verification:</span>
-            <select
-              value={selectedStatus}
-              onChange={(e) =>
-                setSelectedStatus(e.target.value as VerificationStatus | 'All')
-              }
-              className="font-semibold text-[#12313D] bg-transparent outline-none cursor-pointer"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Verified">Verified</option>
-              <option value="Under Review">Under Review</option>
-              <option value="Suspicious">Suspicious</option>
-              <option value="Duplicate">Duplicate</option>
-            </select>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#D8EAF0]/60 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-xl border border-[#D8EAF0]">
+              <span className="text-[#607B86]">Verification:</span>
+              <select
+                value={selectedStatus}
+                onChange={(e) =>
+                  setSelectedStatus(e.target.value as VerificationStatus | 'All')
+                }
+                className="font-semibold text-[#12313D] bg-transparent outline-none cursor-pointer"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Verified">Verified</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Suspicious">Suspicious</option>
+                <option value="Duplicate">Duplicate</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-xl border border-[#D8EAF0]">
+              <span className="text-[#607B86]">Source Type:</span>
+              <select
+                value={selectedSourceType}
+                onChange={(e) =>
+                  setSelectedSourceType(e.target.value as SourceType | 'All')
+                }
+                className="font-semibold text-[#12313D] bg-transparent outline-none cursor-pointer"
+              >
+                <option value="All">All Sources</option>
+                <option value="Official APIs">Official APIs</option>
+                <option value="Weather APIs">Weather APIs</option>
+                <option value="Public Datasets">Public Datasets</option>
+                <option value="Citizen Reports">Citizen Reports</option>
+                <option value="Social Media">Social Media</option>
+                <option value="Websites">Websites</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-xl border border-[#D8EAF0]">
-            <span className="text-[#607B86]">Source Type:</span>
-            <select
-              value={selectedSourceType}
-              onChange={(e) =>
-                setSelectedSourceType(e.target.value as SourceType | 'All')
-              }
-              className="font-semibold text-[#12313D] bg-transparent outline-none cursor-pointer"
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="px-2.5 py-1.5 rounded-xl border border-[#D8EAF0] bg-white/80 text-[#12313D] hover:bg-white text-[11px] font-semibold transition-colors"
             >
-              <option value="All">All Sources</option>
-              <option value="Official APIs">Official APIs</option>
-              <option value="Weather APIs">Weather APIs</option>
-              <option value="Public Datasets">Public Datasets</option>
-              <option value="Citizen Reports">Citizen Reports</option>
-              <option value="Social Media">Social Media</option>
-              <option value="Websites">Websites</option>
-            </select>
-          </div>
+              Clear Filters
+            </button>
+          )}
         </div>
       </div>
 

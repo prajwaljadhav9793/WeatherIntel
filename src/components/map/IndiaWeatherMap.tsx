@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { useTheme } from '../../context/ThemeContext';
+import { STATE_ACTIVITY_DATA } from '../../data/mockData';
 
 interface IndiaWeatherMapProps {
   reports: WeatherReport[];
@@ -32,6 +33,7 @@ interface IndiaWeatherMapProps {
   selectedEvent?: WeatherEventType | 'All';
   selectedState?: string | 'All';
   onSelectState?: (state: string) => void;
+  layerMode?: 'EVENTS' | 'HEATMAP' | 'CLUSTERS' | 'STATE ACTIVITY';
   heightClass?: string;
   isHeroMode?: boolean;
   onViewReportDetails?: (report: WeatherReport) => void;
@@ -46,6 +48,7 @@ export const IndiaWeatherMap: React.FC<IndiaWeatherMapProps> = ({
   selectedEvent = 'All',
   selectedState = 'All',
   onSelectState,
+  layerMode = 'EVENTS',
   heightClass = 'h-[580px]',
   isHeroMode = false,
   onViewReportDetails,
@@ -75,9 +78,7 @@ export const IndiaWeatherMap: React.FC<IndiaWeatherMapProps> = ({
 
   // Synchronize internal slide-over when selectedReport prop changes
   useEffect(() => {
-    if (selectedReport) {
-      setSlideOverReport(selectedReport);
-    }
+    setSlideOverReport(selectedReport ?? null);
   }, [selectedReport]);
 
   // Color mapping by weather event
@@ -193,12 +194,70 @@ export const IndiaWeatherMap: React.FC<IndiaWeatherMapProps> = ({
     markersLayerRef.current.clearLayers();
     heatmapLayerRef.current.clearLayers();
 
-    // Filter reports based on selected event & state
-    const filteredReports = reports.filter((r) => {
-      const matchEvent = selectedEvent === 'All' || r.event === selectedEvent;
-      const matchState = selectedState === 'All' || r.location.state === selectedState;
-      return matchEvent && matchState;
-    });
+    const effectiveHeatmap = showHeatmap || layerMode === 'HEATMAP';
+    const effectiveClusters = layerMode === 'CLUSTERS';
+    const effectiveStateActivity = layerMode === 'STATE ACTIVITY';
+
+    // If a report is selected from the live feed, isolate the map to that single marker.
+    const selectedReportForMap = slideOverReport ?? selectedReport;
+    const filteredReports = selectedReportForMap
+      ? reports.filter((r) => r.id === selectedReportForMap.id)
+      : reports.filter((r) => {
+          const matchEvent = selectedEvent === 'All' || r.event === selectedEvent;
+          const matchState = selectedState === 'All' || r.location.state === selectedState;
+          return matchEvent && matchState;
+        });
+
+    if (effectiveStateActivity && selectedState !== 'All') {
+      const stateMeta = STATE_ACTIVITY_DATA[selectedState];
+      if (stateMeta) {
+        const stateCircle = L.circle([stateMeta.lat, stateMeta.lng], {
+          radius: 260000,
+          color: '#5BBFEF',
+          fillColor: '#5BBFEF',
+          fillOpacity: 0.18,
+          weight: 2,
+        }).addTo(heatmapLayerRef.current!);
+
+        const stateLabel = L.marker([stateMeta.lat, stateMeta.lng], {
+          icon: L.divIcon({
+            className: 'state-activity-label',
+            html: `<div style="background: rgba(8, 126, 155, 0.9); color: white; border-radius: 9999px; padding: 6px 10px; font-size: 11px; font-weight: 700; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 20px rgba(8,126,155,0.2);">${selectedState}</div>`,
+            iconSize: [110, 30],
+            iconAnchor: [55, 15],
+          }),
+        });
+
+        stateCircle.addTo(heatmapLayerRef.current!);
+        stateLabel.addTo(heatmapLayerRef.current!);
+      }
+    }
+
+    if (effectiveClusters) {
+      const clusters = Object.values(
+        filteredReports.reduce((acc, report) => {
+          const key = report.location.state;
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(report);
+          return acc;
+        }, {} as Record<string, WeatherReport[]>)
+      );
+
+      clusters.forEach((items) => {
+        const avgLat = items.reduce((sum, item) => sum + item.location.lat, 0) / items.length;
+        const avgLng = items.reduce((sum, item) => sum + item.location.lng, 0) / items.length;
+        const radius = Math.max(50000, items.length * 24000);
+
+        L.circle([avgLat, avgLng], {
+          radius,
+          color: '#087E9B',
+          fillColor: '#087E9B',
+          fillOpacity: 0.12,
+          weight: 1.5,
+          dashArray: '6 8',
+        }).addTo(heatmapLayerRef.current!);
+      });
+    }
 
     filteredReports.forEach((report) => {
       const isSelected = slideOverReport?.id === report.id;
@@ -221,7 +280,6 @@ export const IndiaWeatherMap: React.FC<IndiaWeatherMapProps> = ({
         }
       });
 
-      // Subtle hover tooltip
       marker.bindTooltip(
         `<strong>${report.event.toUpperCase()}</strong>: ${report.location.city}, ${report.location.state}<br/><span style="font-size:11px;color:#607B86;">AI Conf: ${report.aiConfidence}% • ${report.status}</span>`,
         {
@@ -233,8 +291,7 @@ export const IndiaWeatherMap: React.FC<IndiaWeatherMapProps> = ({
 
       marker.addTo(markersLayerRef.current!);
 
-      // If heatmap/density mode is enabled, add radial atmospheric density circles
-      if (showHeatmap) {
+      if (effectiveHeatmap) {
         const color = getEventColor(report.event);
         const radius = Math.max(35000, report.relatedReportsCount * 1200);
 
@@ -249,14 +306,18 @@ export const IndiaWeatherMap: React.FC<IndiaWeatherMapProps> = ({
       }
     });
 
-    // If a state is selected and not 'All', auto-fly to state bounds
-    if (selectedState !== 'All' && filteredReports.length > 0) {
+    if (selectedReportForMap && filteredReports.length > 0) {
+      const targetReport = filteredReports[0];
+      mapInstanceRef.current.flyTo([targetReport.location.lat, targetReport.location.lng], 7, {
+        duration: 1.2,
+      });
+    } else if (selectedState !== 'All' && filteredReports.length > 0) {
       const stateReport = filteredReports[0];
       mapInstanceRef.current.flyTo([stateReport.location.lat, stateReport.location.lng], 7, {
         duration: 1.2,
       });
     }
-  }, [reports, selectedEvent, selectedState, showHeatmap, slideOverReport, onSelectReport, onSelectState]);
+  }, [reports, selectedEvent, selectedState, showHeatmap, layerMode, slideOverReport, selectedReport, onSelectReport, onSelectState]);
 
   // Zoom controls
   const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
