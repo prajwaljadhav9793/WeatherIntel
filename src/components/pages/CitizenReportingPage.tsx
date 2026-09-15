@@ -50,6 +50,7 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
 
   const handleUseCurrentLocation = () => {
     setIsLocating(true);
+    // Simulate real browser geolocation fallback
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -63,6 +64,7 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
           setIsLocating(false);
         },
         () => {
+          // Default to Pune / Maharashtra coordinates if permission denied in iframe
           setCoordinates({ lat: 18.5204, lng: 73.8567 });
           setCity('Pune');
           setDistrict('Haveli');
