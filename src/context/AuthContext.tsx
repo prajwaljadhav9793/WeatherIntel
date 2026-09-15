@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserRole } from '../types';
-import { loginUserApi, registerUserApi } from '../services/api';
+import {
+  firebaseSignInWithEmail,
+  firebaseSignUpWithEmail,
+  firebaseSignInWithGoogle,
+  isFirebaseCloudConfigured,
+  FirebaseAuthUser,
+} from '../services/firebaseAuth';
 
 interface RegisterData {
   name: string;
@@ -12,10 +18,13 @@ interface RegisterData {
 
 interface AuthContextType {
   user: UserProfile | null;
+  firebaseUser: FirebaseAuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isFirebaseCloud: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  loginWithGoogle: (assignedRole?: UserRole) => Promise<void>;
   quickDemoLogin: (role: UserRole) => Promise<void>;
   logout: () => void;
 }
@@ -56,7 +65,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isFirebaseCloud = isFirebaseCloudConfigured();
 
   useEffect(() => {
     try {
@@ -65,6 +76,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(stored);
         if (parsed && parsed.email && parsed.role) {
           setUser(parsed);
+          setFirebaseUser({
+            uid: parsed.token || 'stored_session',
+            email: parsed.email,
+            displayName: parsed.name,
+            emailVerified: true,
+            idToken: parsed.token || 'valid_token',
+            role: parsed.role,
+            organization: parsed.organization || '',
+            providerId: 'firebase.password',
+            createdAt: new Date().toISOString(),
+          });
         }
       }
     } catch (e) {
@@ -75,10 +97,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const saveSession = (u: UserProfile) => {
-    setUser(u);
+  const saveSession = (fbUser: FirebaseAuthUser) => {
+    const profile: UserProfile = {
+      name: fbUser.displayName,
+      email: fbUser.email,
+      role: fbUser.role,
+      organization: fbUser.organization,
+      avatarUrl: fbUser.photoURL,
+    };
+    setUser(profile);
+    setFirebaseUser(fbUser);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
     } catch (e) {
       console.warn('[Auth] Could not persist session:', e);
     }
@@ -87,15 +117,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const res = await loginUserApi({ email, password });
-      saveSession(res.user);
+      const fbUser = await firebaseSignInWithEmail(email, password);
+      saveSession(fbUser);
     } catch (err: any) {
       // Fallback check if user typed demo email/pass locally
       const matchingDemo = Object.values(DEMO_PERSONAS).find(
         (d) => d.profile.email.toLowerCase() === email.trim().toLowerCase() && d.pass === password
       );
       if (matchingDemo) {
-        saveSession(matchingDemo.profile);
+        saveSession({
+          uid: 'demo_user',
+          email: matchingDemo.profile.email,
+          displayName: matchingDemo.profile.name,
+          emailVerified: true,
+          idToken: 'demo_token',
+          role: matchingDemo.profile.role,
+          organization: matchingDemo.profile.organization,
+          providerId: 'firebase.password',
+          createdAt: new Date().toISOString(),
+        });
         return;
       }
       throw err;
@@ -107,21 +147,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      const res = await registerUserApi(data);
-      saveSession(res.user);
+      const fbUser = await firebaseSignUpWithEmail({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+        organization: data.organization,
+      });
+      saveSession(fbUser);
     } catch (err: any) {
-      // If backend network error, still register offline gracefully for testing
-      if (err.message && err.message.includes('fetch')) {
-        const offlineProfile: UserProfile = {
-          name: data.name,
+      // Offline graceful registration fallback
+      if (err.message && (err.message.includes('fetch') || err.message.includes('Network'))) {
+        saveSession({
+          uid: `offline_${Date.now()}`,
           email: data.email,
+          displayName: data.name,
+          emailVerified: true,
+          idToken: `offline_token_${Date.now()}`,
           role: data.role,
           organization: data.organization || 'WeatherIntel Observer Network',
-        };
-        saveSession(offlineProfile);
+          providerId: 'firebase.password',
+          createdAt: new Date().toISOString(),
+        });
         return;
       }
       throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (assignedRole: UserRole = 'Citizen') => {
+    setIsLoading(true);
+    try {
+      const fbUser = await firebaseSignInWithGoogle(assignedRole);
+      saveSession(fbUser);
     } finally {
       setIsLoading(false);
     }
@@ -131,11 +191,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     const demo = DEMO_PERSONAS[role];
     try {
-      const res = await loginUserApi({ email: demo.profile.email, password: demo.pass });
-      saveSession(res.user);
+      const fbUser = await firebaseSignInWithEmail(demo.profile.email, demo.pass);
+      saveSession(fbUser);
     } catch {
-      // Local fallback for offline/instant testing
-      saveSession(demo.profile);
+      saveSession({
+        uid: `demo_${role.toLowerCase()}`,
+        email: demo.profile.email,
+        displayName: demo.profile.name,
+        emailVerified: true,
+        idToken: `demo_token_${Date.now()}`,
+        role: demo.profile.role,
+        organization: demo.profile.organization,
+        providerId: 'firebase.password',
+        createdAt: new Date().toISOString(),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setFirebaseUser(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch (e) {
@@ -154,10 +224,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        firebaseUser,
         isAuthenticated: !!user,
         isLoading,
+        isFirebaseCloud,
         login,
         register,
+        loginWithGoogle,
         quickDemoLogin,
         logout,
       }}
@@ -173,5 +246,4 @@ export function useAuth(): AuthContextType {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
+}
