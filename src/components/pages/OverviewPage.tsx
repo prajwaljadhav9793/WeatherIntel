@@ -32,6 +32,18 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   onNavigate,
   onViewReportDetails,
 }) => {
+  const handleSelectLiveEvent = (report: (typeof reports)[number]) => {
+    onSelectReport(report);
+    onFilterChange({
+      dateRange: '24H',
+      event: report.event,
+      state: 'All',
+      district: 'All',
+      verification: 'All',
+      searchQuery: '',
+    });
+  };
+
   return (
     <div className="space-y-8 pb-12">
       {/* Dashboard Header */}
@@ -91,7 +103,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           <LiveEventFeed
             reports={reports}
             selectedReportId={selectedReport?.id}
-            onSelectReport={onSelectReport}
+            onSelectReport={handleSelectLiveEvent}
             onViewAllReports={() => onNavigate('reports')}
           />
         </div>

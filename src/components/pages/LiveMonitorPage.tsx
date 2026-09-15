@@ -26,6 +26,7 @@ interface LiveMonitorPageProps {
   reports: WeatherReport[];
   selectedReport: WeatherReport | null;
   onSelectReport: (report: WeatherReport) => void;
+  onClearSelectedReport: () => void;
   onViewReportDetails: (report: WeatherReport) => void;
 }
 
@@ -33,6 +34,7 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
   reports,
   selectedReport,
   onSelectReport,
+  onClearSelectedReport,
   onViewReportDetails,
 }) => {
   const [selectedEvent, setSelectedEvent] = useState<WeatherEventType | 'All'>('All');
@@ -62,12 +64,30 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
     return matchEvent && matchSeverity && matchVerif && matchState && matchSearch;
   });
 
+  const hasActiveFilters =
+    selectedEvent !== 'All' ||
+    selectedSeverity !== 'All' ||
+    selectedVerification !== 'All' ||
+    selectedState !== 'All' ||
+    searchQuery.trim() !== '';
+
   const resetFilters = () => {
     setSelectedEvent('All');
     setSelectedSeverity('All');
     setSelectedVerification('All');
     setSelectedState('All');
     setSearchQuery('');
+    onClearSelectedReport();
+  };
+
+  const applyFilter = (updater: () => void) => {
+    updater();
+    onClearSelectedReport();
+  };
+
+  const clearCurrentView = () => {
+    resetFilters();
+    onClearSelectedReport();
   };
 
   return (
@@ -99,7 +119,7 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
               type="text"
               placeholder="Search city, state or event..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => applyFilter(() => setSearchQuery(e.target.value))}
               className={`w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border focus:outline-none transition-colors ${
                 isDarkMode
                   ? 'bg-[#102431] border-[#1E3E50] text-[#E0F2F7] placeholder-[#6C8E9F] focus:border-[#5BBFEF]'
@@ -168,7 +188,9 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
             </span>
             <select
               value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value as WeatherEventType | 'All')}
+              onChange={(e) =>
+                applyFilter(() => setSelectedEvent(e.target.value as WeatherEventType | 'All'))
+              }
               className={`font-semibold bg-transparent outline-none cursor-pointer ${
                 isDarkMode ? 'text-white' : 'text-[#12313D]'
               }`}
@@ -217,7 +239,9 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
             </span>
             <select
               value={selectedSeverity}
-              onChange={(e) => setSelectedSeverity(e.target.value as AlertSeverity | 'All')}
+              onChange={(e) =>
+                applyFilter(() => setSelectedSeverity(e.target.value as AlertSeverity | 'All'))
+              }
               className={`font-semibold bg-transparent outline-none cursor-pointer ${
                 isDarkMode ? 'text-white' : 'text-[#12313D]'
               }`}
@@ -255,7 +279,9 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
             <select
               value={selectedVerification}
               onChange={(e) =>
-                setSelectedVerification(e.target.value as VerificationStatus | 'All')
+                applyFilter(() =>
+                  setSelectedVerification(e.target.value as VerificationStatus | 'All')
+                )
               }
               className={`font-semibold bg-transparent outline-none cursor-pointer ${
                 isDarkMode ? 'text-white' : 'text-[#12313D]'
@@ -293,7 +319,7 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
             </span>
             <select
               value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
+              onChange={(e) => applyFilter(() => setSelectedState(e.target.value))}
               className={`font-semibold bg-transparent outline-none cursor-pointer ${
                 isDarkMode ? 'text-white' : 'text-[#12313D]'
               }`}
@@ -349,15 +375,30 @@ export const LiveMonitorPage: React.FC<LiveMonitorPageProps> = ({
         </div>
 
         {/* Live Indicator */}
-        <div
-          className={`flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-            isDarkMode
-              ? 'text-[#5BBFEF] bg-[#0A2634] border-[#18495E]'
-              : 'text-[#07556B] bg-[#EAF7FD] border-[#5BBFEF]/30'
-          }`}
-        >
-          <span className="w-2 h-2 rounded-full bg-[#25BFA5] animate-ping" />
-          <span>{filteredReports.length} Real-Time Markers</span>
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+              isDarkMode
+                ? 'text-[#5BBFEF] bg-[#0A2634] border-[#18495E]'
+                : 'text-[#07556B] bg-[#EAF7FD] border-[#5BBFEF]/30'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-[#25BFA5] animate-ping" />
+            <span>{filteredReports.length} Real-Time Markers</span>
+          </div>
+
+          {(selectedReport || hasActiveFilters) && (
+            <button
+              onClick={clearCurrentView}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-colors ${
+                isDarkMode
+                  ? 'border-[#1E3E50] bg-[#102431] text-[#E0F2F7] hover:bg-[#153447]'
+                  : 'border-[#D8EAF0] bg-white/80 text-[#12313D] hover:bg-white'
+              }`}
+            >
+              Clear View
+            </button>
+          )}
         </div>
       </div>
 

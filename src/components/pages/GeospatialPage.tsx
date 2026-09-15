@@ -78,6 +78,7 @@ export const GeospatialPage: React.FC<GeospatialPageProps> = ({
             onSelectReport={onSelectReport}
             selectedState={selectedStateName}
             onSelectState={setSelectedStateName}
+            layerMode={activeLayer}
             heightClass="h-[600px]"
             showNationalStatusOverlay={false}
             onViewReportDetails={onViewReportDetails}

@@ -52,6 +52,10 @@ export function MainWeatherPlatform() {
     setSelectedReport(report);
   };
 
+  const handleClearSelectedReport = () => {
+    setSelectedReport(null);
+  };
+
   const handleViewReportDetails = (report: WeatherReport) => {
     setSelectedReport(report);
     setCurrentPage('report-details');
@@ -101,6 +105,7 @@ export function MainWeatherPlatform() {
             reports={reports}
             selectedReport={selectedReport}
             onSelectReport={handleSelectReport}
+            onClearSelectedReport={handleClearSelectedReport}
             onViewReportDetails={handleViewReportDetails}
           />
         );
