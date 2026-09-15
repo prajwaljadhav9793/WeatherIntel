@@ -290,6 +290,136 @@ app.get('/api/analytics', (req, res) => {
   }
 });
 
+// --- Authentication Endpoints ---
+
+// POST /api/auth/login - Authenticate user credentials
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(normalizedEmail) as any;
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ success: false, error: 'Invalid credentials. Please verify your email and password.' });
+    }
+
+    const sessionToken = `token_${user.id}_${Date.now()}`;
+
+    // Log successful login to audit trail
+    db.prepare(`
+      INSERT INTO audit_logs (id, timestamp, reportId, userRole, userName, action, oldStatus, newStatus, justification)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `AUDIT-AUTH-${Date.now().toString().slice(-6)}`,
+      new Date().toISOString(),
+      'N/A',
+      user.role,
+      user.name,
+      'USER_LOGIN',
+      'Unauthenticated',
+      'Authenticated',
+      `User ${user.email} successfully logged into ${user.role} role.`
+    );
+
+    res.json({
+      success: true,
+      user: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organization: user.organization || 'WeatherIntel Network',
+      },
+      token: sessionToken,
+    });
+  } catch (err: any) {
+    console.error('[API] /api/auth/login error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/auth/register - Register new personnel / citizen
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { name, email, password, role = 'Citizen', organization } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: 'Full name, email, and password are required.' });
+    }
+
+    const validRoles = ['Citizen', 'IMD Analyst', 'Admin'];
+    const assignedRole = validRoles.includes(role) ? role : 'Citizen';
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(normalizedEmail);
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'An account with this email address already exists. Please log in.' });
+    }
+
+    const userId = `USR-${Date.now().toString().slice(-6)}`;
+    const org = organization?.trim() || (assignedRole === 'Citizen' ? 'Citizen Weather Observer' : assignedRole === 'IMD Analyst' ? 'IMD Meteorological Division' : 'State Disaster Management Authority');
+
+    db.prepare(`
+      INSERT INTO users (id, name, email, password, role, organization, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      userId,
+      name.trim(),
+      normalizedEmail,
+      password,
+      assignedRole,
+      org,
+      new Date().toISOString()
+    );
+
+    // Audit log new registration
+    db.prepare(`
+      INSERT INTO audit_logs (id, timestamp, reportId, userRole, userName, action, oldStatus, newStatus, justification)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `AUDIT-REG-${Date.now().toString().slice(-6)}`,
+      new Date().toISOString(),
+      'N/A',
+      assignedRole,
+      name.trim(),
+      'USER_REGISTRATION',
+      'None',
+      'Created',
+      `New user registered with role ${assignedRole} (${org}).`
+    );
+
+    const sessionToken = `token_${userId}_${Date.now()}`;
+
+    res.status(201).json({
+      success: true,
+      user: {
+        name: name.trim(),
+        email: normalizedEmail,
+        role: assignedRole,
+        organization: org,
+      },
+      token: sessionToken,
+    });
+  } catch (err: any) {
+    console.error('[API] /api/auth/register error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/auth/users - Retrieve registered personnel (Admin view)
+app.get('/api/auth/users', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT id, name, email, role, organization, createdAt FROM users ORDER BY rowid DESC').all();
+    res.json({ success: true, count: rows.length, data: rows });
+  } catch (err: any) {
+    console.error('[API] /api/auth/users error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 11. GET /api/stream - Server-Sent Events (SSE) Real-Time Stream
 app.get('/api/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');

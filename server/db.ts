@@ -106,6 +106,16 @@ db.exec(`
     lastChecked TEXT NOT NULL,
     notes TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL,
+    organization TEXT,
+    createdAt TEXT NOT NULL
+  );
 `);
 
 // Seed Initial Data if database is empty
@@ -247,6 +257,46 @@ if (reportCount.count === 0) {
   );
 
   console.log(`[DB] Seeding complete. Indexed ${INITIAL_REPORTS.length} reports, ${ACTIVE_ALERTS.length} alerts.`);
+}
+
+// Seed default users if users table is empty
+const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+if (userCount.count === 0) {
+  const insertUser = db.prepare(`
+    INSERT INTO users (id, name, email, password, role, organization, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insertUser.run(
+    'USR-IMD-001',
+    'Dr. Priya Deshmukh',
+    'analyst.deshmukh@imd.gov.in',
+    'imd12345',
+    'IMD Analyst',
+    'India Meteorological Department (IMD)',
+    new Date().toISOString()
+  );
+
+  insertUser.run(
+    'USR-NDMA-002',
+    'Commissioner Roy',
+    'commissioner@ndma.gov.in',
+    'admin12345',
+    'Admin',
+    'National Disaster Management Authority (NDMA)',
+    new Date().toISOString()
+  );
+
+  insertUser.run(
+    'USR-CTZ-003',
+    'Aarav Sharma',
+    'aarav.sharma@gmail.com',
+    'citizen12345',
+    'Citizen',
+    'Citizen Weather Observer Network',
+    new Date().toISOString()
+  );
+  console.log('[DB] Seeded default user accounts (Analyst, Admin, Citizen).');
 }
 
 export function formatDbReport(row: any): WeatherReport {

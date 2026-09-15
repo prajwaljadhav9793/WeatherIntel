@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivePage,
   WeatherReport,
@@ -11,7 +11,8 @@ import { Navbar } from './components/common/Navbar';
 import { MobileNavigation } from './components/common/MobileNavigation';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { WeatherProvider, useWeather } from './context/WeatherContext';
-import { Sun, Moon } from 'lucide-react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Sun, Moon, Lock, Shield, X } from 'lucide-react';
 
 // Page components
 import { LandingPage } from './components/pages/LandingPage';
@@ -33,6 +34,7 @@ import { AuthModalOrPage } from './components/pages/AuthModalOrPage';
 
 export function MainWeatherPlatform() {
   const { isDark, toggleTheme } = useTheme();
+  const { isAuthenticated, user, logout } = useAuth();
   const {
     reports,
     selectedReport,
@@ -44,9 +46,38 @@ export function MainWeatherPlatform() {
     setSelectedReport,
     updateReportStatus,
   } = useWeather();
-  const [currentPage, setCurrentPage] = useState<ActivePage>('overview');
-  const [userRole, setUserRole] = useState<UserRole>('IMD Analyst');
+
+  // If user is authenticated, default to overview; otherwise, default to landing
+  const [currentPage, setCurrentPage] = useState<ActivePage>(() => (isAuthenticated ? 'overview' : 'landing'));
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Sync page with auth state changes
+  useEffect(() => {
+    if (!isAuthenticated) {
+      if (currentPage !== 'landing' && currentPage !== 'auth') {
+        setCurrentPage('landing');
+      }
+    } else {
+      if (currentPage === 'landing' || currentPage === 'auth') {
+        setCurrentPage('overview');
+      }
+    }
+  }, [isAuthenticated]);
+
+  const currentRole: UserRole = user?.role || 'IMD Analyst';
+
+  // Navigation Guard: Protect internal modules
+  const handleNavigate = (page: ActivePage) => {
+    if (!isAuthenticated && page !== 'landing' && page !== 'auth') {
+      setShowAuthModal(true);
+      return;
+    }
+    setCurrentPage(page);
+  };
+
+  const handleOpenAuth = (mode?: 'login' | 'register') => {
+    setShowAuthModal(true);
+  };
 
   const handleSelectReport = (report: WeatherReport) => {
     setSelectedReport(report);
@@ -58,7 +89,7 @@ export function MainWeatherPlatform() {
 
   const handleViewReportDetails = (report: WeatherReport) => {
     setSelectedReport(report);
-    setCurrentPage('report-details');
+    handleNavigate('report-details');
   };
 
   const handleAddReport = (newReport: WeatherReport) => {
@@ -70,18 +101,31 @@ export function MainWeatherPlatform() {
     newStatus: VerificationStatus,
     justification?: string
   ) => {
-    updateReportStatus(reportId, newStatus, justification, userRole);
+    updateReportStatus(reportId, newStatus, justification, currentRole);
   };
 
-  // Render Page
+  // Render Page with strict protection
   const renderPage = () => {
+    // If not authenticated and attempting to view any protected module, enforce landing
+    if (!isAuthenticated && currentPage !== 'landing' && currentPage !== 'auth') {
+      return (
+        <LandingPage
+          reports={reports}
+          onNavigate={handleNavigate}
+          onSelectReport={handleSelectReport}
+          onOpenAuth={handleOpenAuth}
+        />
+      );
+    }
+
     switch (currentPage) {
       case 'landing':
         return (
           <LandingPage
             reports={reports}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             onSelectReport={handleSelectReport}
+            onOpenAuth={handleOpenAuth}
           />
         );
 
@@ -94,7 +138,7 @@ export function MainWeatherPlatform() {
             filters={filters}
             onFilterChange={handleFilterChange}
             onResetFilters={handleResetFilters}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             onViewReportDetails={handleViewReportDetails}
           />
         );
@@ -123,7 +167,7 @@ export function MainWeatherPlatform() {
         return selectedReport ? (
           <ReportDetailsPage
             report={selectedReport}
-            onBack={() => setCurrentPage('reports')}
+            onBack={() => handleNavigate('reports')}
             onUpdateStatus={handleUpdateReportStatus}
           />
         ) : (
@@ -135,6 +179,7 @@ export function MainWeatherPlatform() {
         );
 
       case 'verification':
+      case 'admin-verification':
         return (
           <AIVerificationCenterPage
             reports={reports}
@@ -172,10 +217,11 @@ export function MainWeatherPlatform() {
         return <DataSourcesPage />;
 
       case 'admin':
+      case 'admin-dashboard':
         return (
           <AdminDashboardPage
             reports={reports}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             onSelectReport={handleSelectReport}
             onUpdateReportStatus={handleUpdateReportStatus}
           />
@@ -198,9 +244,8 @@ export function MainWeatherPlatform() {
       case 'auth':
         return (
           <AuthModalOrPage
-            currentRole={userRole}
-            onRoleChange={setUserRole}
-            onClose={() => setCurrentPage('overview')}
+            onSuccess={() => handleNavigate('overview')}
+            onClose={() => handleNavigate(isAuthenticated ? 'overview' : 'landing')}
           />
         );
 
@@ -213,7 +258,7 @@ export function MainWeatherPlatform() {
             filters={filters}
             onFilterChange={handleFilterChange}
             onResetFilters={handleResetFilters}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             onViewReportDetails={handleViewReportDetails}
           />
         );
@@ -226,15 +271,15 @@ export function MainWeatherPlatform() {
         isDark ? 'bg-[#061218] text-[#E0F2F7]' : 'bg-[#F5FAFC] text-[#12313D]'
       }`}
     >
-      {/* Top Main Navigation */}
+      {/* Top Main Navigation with Dynamic Auth Gating */}
       <Navbar
         activePage={currentPage}
-        onNavigate={setCurrentPage}
-        userRole={userRole}
-        onRoleChange={setUserRole}
-        onOpenAuth={() => setCurrentPage('auth')}
-        onOpenSearch={() => setCurrentPage('overview')}
-        activeAlertsCount={4}
+        onNavigate={handleNavigate}
+        userRole={currentRole}
+        userProfile={user || undefined}
+        onOpenAuth={handleOpenAuth}
+        onOpenSearch={() => handleNavigate('overview')}
+        activeAlertsCount={alerts.length}
         pendingVerificationCount={
           reports.filter(
             (r) => r.status === 'Under Review' || r.status === 'Unverified'
@@ -247,12 +292,34 @@ export function MainWeatherPlatform() {
         {renderPage()}
       </main>
 
+      {/* Auth Modal Overlay when triggered by visitor clicking locked features */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 z-20 p-2 rounded-xl bg-white/80 hover:bg-white text-[#12313D] shadow-md border border-[#D8EAF0] transition-colors"
+              aria-label="Close authentication modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <AuthModalOrPage
+              onSuccess={() => {
+                setShowAuthModal(false);
+                handleNavigate('overview');
+              }}
+              onClose={() => setShowAuthModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Mobile Bottom Navigation Bar */}
       <MobileNavigation
         activePage={currentPage}
-        onNavigate={setCurrentPage}
-        onOpenAuth={() => setCurrentPage('auth')}
-        activeAlertsCount={4}
+        onNavigate={handleNavigate}
+        onOpenAuth={handleOpenAuth}
+        activeAlertsCount={alerts.length}
       />
 
       {/* Official Government / IMD Footer */}
@@ -278,29 +345,40 @@ export function MainWeatherPlatform() {
 
           <div className="flex flex-wrap items-center gap-4 text-[11px]">
             <button
-              onClick={() => setCurrentPage('landing')}
+              onClick={() => handleNavigate('landing')}
               className="hover:text-[#087E9B] transition-colors"
             >
               Portal Home
             </button>
-            <button
-              onClick={() => setCurrentPage('system-health')}
-              className="hover:text-[#087E9B] transition-colors"
-            >
-              System Health
-            </button>
-            <button
-              onClick={() => setCurrentPage('sources')}
-              className="hover:text-[#087E9B] transition-colors"
-            >
-              Sensor Feeds
-            </button>
-            <button
-              onClick={() => setCurrentPage('auth')}
-              className="hover:text-[#087E9B] transition-colors"
-            >
-              Role Auth ({userRole})
-            </button>
+            {isAuthenticated ? (
+              <>
+                <button
+                  onClick={() => handleNavigate('system-health')}
+                  className="hover:text-[#087E9B] transition-colors"
+                >
+                  System Health
+                </button>
+                <button
+                  onClick={() => handleNavigate('sources')}
+                  className="hover:text-[#087E9B] transition-colors"
+                >
+                  Sensor Feeds
+                </button>
+                <button
+                  onClick={() => handleNavigate('auth')}
+                  className="hover:text-[#087E9B] transition-colors"
+                >
+                  Profile ({user?.name || currentRole})
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleOpenAuth('login')}
+                className="hover:text-[#087E9B] font-semibold transition-colors"
+              >
+                Sign In / Register
+              </button>
+            )}
 
             {/* Quick theme toggle in footer */}
             <button
@@ -324,7 +402,8 @@ export function MainWeatherPlatform() {
                   <Moon className="w-3.5 h-3.5 text-[#607B86]" />
                   <span>Dark Mode</span>
                 </>
-              )}
+              )
+            }
             </button>
           </div>
 
@@ -340,10 +419,11 @@ export function MainWeatherPlatform() {
 export default function App() {
   return (
     <ThemeProvider>
-      <WeatherProvider>
-        <MainWeatherPlatform />
-      </WeatherProvider>
+      <AuthProvider>
+        <WeatherProvider>
+          <MainWeatherPlatform />
+        </WeatherProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
-

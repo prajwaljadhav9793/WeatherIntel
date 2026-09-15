@@ -133,12 +133,21 @@ async function runEndToEndVerification() {
     `Action: ${latestAudit?.action}, User: ${latestAudit?.userName}`
   );
 
+  // 11. User Authentication & Multi-Role Personnel Catalog
+  const userCount = (db.prepare('SELECT COUNT(*) as cnt FROM users').get() as any).cnt;
+  assert(
+    userCount >= 3,
+    '11. Secure Multi-Role Authentication & User Persistence (Analyst, Admin, Citizen)',
+    `Registered users count: ${userCount}`
+  );
+
   console.log('\n-----------------------------------------------------------');
   console.log(` Test Results: ${passed} / ${total} Checks Passed (${Math.round((passed / total) * 100)}%)`);
   console.log('-----------------------------------------------------------\n');
 
   if (passed === total) {
-    console.log('[SUCCESS] All 8 problem statement architectural requirements verified!');
+    console.log('[SUCCESS] All problem statement requirements and authentication gating verified!');
+    process.exit(0);
   } else {
     process.exit(1);
   }

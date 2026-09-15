@@ -6,6 +6,7 @@ import {
   FilterState,
   VerificationStatus,
   WeatherEventType,
+  UserProfile,
 } from '../types';
 import {
   INITIAL_REPORTS,
@@ -166,4 +167,52 @@ export async function fetchAnalyticsApi(): Promise<any> {
     return null;
   }
 }
+
+export async function loginUserApi(credentials: {
+  email: string;
+  password: string;
+}): Promise<{ user: UserProfile; token: string }> {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to authenticate.');
+  }
+  return { user: data.user, token: data.token };
+}
+
+export async function registerUserApi(userData: {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  organization?: string;
+}): Promise<{ user: UserProfile; token: string }> {
+  const res = await fetch(`${BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to register account.');
+  }
+  return { user: data.user, token: data.token };
+}
+
+export async function fetchUsersApi(): Promise<any[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/users`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return json.data || [];
+  } catch (err) {
+    console.warn('[API Client] Falling back on fetch users:', err);
+    return [];
+  }
+}
+
 
