@@ -12,25 +12,33 @@ import {
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react';
+import { useWeather } from '../../context/WeatherContext';
 
 export const SourceManagementPage: React.FC = () => {
-  const [sources, setSources] = useState<DataSource[]>(MOCK_DATA_SOURCES);
+  const { sources: contextSources, toggleSource } = useWeather();
+  const [sources, setSources] = useState<DataSource[]>(contextSources);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState<SourceType>('Weather APIs');
   const [newTrust, setNewTrust] = useState(85);
   const [notification, setNotification] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (contextSources && contextSources.length > 0) {
+      setSources(contextSources);
+    }
+  }, [contextSources]);
+
   const toggleSourceStatus = (id: string) => {
-    setSources((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const nextStatus = s.status === 'Trusted' ? 'Restricted' : 'Trusted';
-          return { ...s, status: nextStatus };
-        }
-        return s;
-      })
-    );
+    const src = sources.find((s) => s.id === id);
+    if (src) {
+      toggleSource(id, !src.activeStatus);
+      setSources((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, activeStatus: !s.activeStatus } : s))
+      );
+      setNotification(`Source ${src.name} status updated.`);
+      setTimeout(() => setNotification(null), 3000);
+    }
   };
 
   const updateTrust = (id: string, newScore: number) => {

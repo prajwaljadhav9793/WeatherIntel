@@ -14,21 +14,25 @@ import {
   Filter,
   ArrowRight,
   ExternalLink,
+  History,
 } from 'lucide-react';
+import { useWeather } from '../../context/WeatherContext';
 
 interface AdminVerificationWorkspaceProps {
   reports: WeatherReport[];
-  onUpdateReportStatus: (reportId: string, status: VerificationStatus) => void;
+  onUpdateReportStatus: (reportId: string, status: VerificationStatus, justification?: string) => void;
 }
 
 export const AdminVerificationWorkspacePage: React.FC<
   AdminVerificationWorkspaceProps
 > = ({ reports, onUpdateReportStatus }) => {
+  const { auditLogs } = useWeather();
   const [selectedReportId, setSelectedReportId] = useState<string>(
     reports[0]?.id || ''
   );
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [justification, setJustification] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
 
   const filteredReports = reports.filter((r) => {
@@ -45,8 +49,9 @@ export const AdminVerificationWorkspacePage: React.FC<
 
   const handleAction = (status: VerificationStatus) => {
     if (!selectedReport) return;
-    onUpdateReportStatus(selectedReport.id, status);
+    onUpdateReportStatus(selectedReport.id, status, justification);
     setNotification(`Report ${selectedReport.id} marked as ${status}`);
+    setJustification('');
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -273,10 +278,23 @@ export const AdminVerificationWorkspacePage: React.FC<
               </div>
 
               {/* Instant Action Controls */}
-              <div className="pt-3 border-t border-[#D8EAF0] space-y-2">
+              <div className="pt-3 border-t border-[#D8EAF0] space-y-2.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#607B86] block text-center">
-                  Immediate Disposition
+                  Immediate Disposition & Audit
                 </span>
+
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#607B86] mb-1">
+                    Analyst Justification / Audit Note:
+                  </label>
+                  <input
+                    type="text"
+                    value={justification}
+                    onChange={(e) => setJustification(e.target.value)}
+                    placeholder="e.g. Corroborated with AWS Santacruz radar..."
+                    className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-[#D8EAF0] bg-white focus:outline-none focus:border-[#087E9B]"
+                  />
+                </div>
 
                 <button
                   onClick={() => handleAction('Verified')}
@@ -306,6 +324,66 @@ export const AdminVerificationWorkspacePage: React.FC<
               </div>
             </>
           ) : null}
+        </div>
+      </div>
+
+      {/* Live Immutable Audit Trail */}
+      <div className="glass-panel p-5 rounded-3xl border border-[#D8EAF0] space-y-4 shadow-2xs mt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-[#087E9B]" />
+            <h2 className="text-sm font-bold text-[#12313D] uppercase tracking-wider">
+              Immutable Governance Audit Trail (Live Database)
+            </h2>
+          </div>
+          <span className="text-xs text-[#607B86]">
+            Showing recent administrative & automated triage actions
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[#D8EAF0] text-[#607B86]">
+                <th className="py-2 px-3 font-semibold">Timestamp</th>
+                <th className="py-2 px-3 font-semibold">Report ID</th>
+                <th className="py-2 px-3 font-semibold">User & Role</th>
+                <th className="py-2 px-3 font-semibold">Action</th>
+                <th className="py-2 px-3 font-semibold">Transition</th>
+                <th className="py-2 px-3 font-semibold">Justification / Audit Note</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D8EAF0]/50">
+              {auditLogs && auditLogs.length > 0 ? (
+                auditLogs.slice(0, 6).map((log: any) => (
+                  <tr key={log.id} className="hover:bg-[#EAF7FD]/40 transition-colors">
+                    <td className="py-2.5 px-3 font-mono text-[11px] text-[#607B86]">
+                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </td>
+                    <td className="py-2.5 px-3 font-semibold text-[#087E9B]">{log.reportId}</td>
+                    <td className="py-2.5 px-3 text-[#12313D]">{log.userName} ({log.userRole})</td>
+                    <td className="py-2.5 px-3">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF7FD] text-[#07556B]">
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-[11px]">
+                      <span className="text-[#607B86]">{log.oldStatus}</span> → <strong className="text-[#2AA66F]">{log.newStatus}</strong>
+                    </td>
+                    <td className="py-2.5 px-3 text-[#12313D] italic max-w-xs truncate">
+                      {log.justification}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="py-4 text-center text-[#607B86]">
+                    No audit logs recorded in current session yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

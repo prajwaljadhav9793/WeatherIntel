@@ -12,6 +12,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
+import { submitCitizenReportApi } from '../../services/api';
+
 interface CitizenReportingPageProps {
   onAddReport: (newReport: WeatherReport) => void;
   onViewReport: (report: WeatherReport) => void;
@@ -27,12 +29,14 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
   const [district, setDistrict] = useState('');
   const [state, setState] = useState('Maharashtra');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>({
-    lat: 16.705,
-    lng: 74.2433,
+    lat: 18.5204,
+    lng: 73.8567,
   });
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [submittedReport, setSubmittedReport] = useState<WeatherReport | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const eventTypes: WeatherEventType[] = [
     'Rainfall',
@@ -46,7 +50,6 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
 
   const handleUseCurrentLocation = () => {
     setIsLocating(true);
-    // Simulate real browser geolocation fallback
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -60,7 +63,6 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
           setIsLocating(false);
         },
         () => {
-          // Default to Pune / Maharashtra coordinates if permission denied in iframe
           setCoordinates({ lat: 18.5204, lng: 73.8567 });
           setCity('Pune');
           setDistrict('Haveli');
@@ -88,56 +90,32 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmissionError(null);
 
-    const newId = `REP-${Date.now().toString().slice(-4)}`;
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} ${
-      now.getHours() >= 12 ? 'PM' : 'AM'
-    }`;
-    const dateStr = 'Today';
-
-    const newReport: WeatherReport = {
-      id: newId,
-      title: `${eventType} observed at ${city || 'Local Area'}`,
-      description: description || `Severe ${eventType.toLowerCase()} reported by citizen. Water level and wind observations recorded.`,
-      event: eventType,
-      severity: eventType === 'Flooding' || eventType === 'Heatwave' ? 'High' : 'Moderate',
-      status: 'Under Review',
-      aiConfidence: Math.floor(85 + Math.random() * 12),
-      source: 'Citizen Mobile App (Geotagged)',
-      sourceType: 'Citizen Reports',
-      sourceTrust: 88,
-      duplicateProbability: 12,
-      timestamp: `${dateStr} • ${timeStr}`,
-      location: {
-        city: city || 'Kolhapur',
-        district: district || 'Kolhapur',
+    try {
+      const report = await submitCitizenReportApi({
+        title: `${eventType} observed at ${city || 'Local Area'}`,
+        description: description || `Severe ${eventType.toLowerCase()} reported by citizen on ground.`,
+        event: eventType,
+        city: city || 'Pune',
+        district: district || city || 'Pune',
         state: state || 'Maharashtra',
-        lat: coordinates?.lat || 16.705,
-        lng: coordinates?.lng || 74.2433,
-      },
-      mediaUrl:
-        mediaPreview ||
-        'https://images.unsplash.com/photo-1514632595-4944383f2737?auto=format&fit=crop&w=1200&q=80',
-      relatedReportsCount: 1,
-      updatedAt: `${dateStr} • ${timeStr}`,
-      aiAssessment: {
-        confidenceScore: 89,
-        eventClassification: `${eventType} — 91% match with cloud reflectivity`,
-        locationConsistency: 'High',
-        timestampConsistency: 'High',
-        duplicateDetection: 'Low probability',
-        duplicateProbability: 12,
-        imageAnalysis: 'Visual indicators show ground precipitation and atmospheric humidity markers consistent with report.',
-        flagReason: 'Citizen report forwarded to automated verification queue. Coordinates match local AWS boundary with < 2 min latency.',
-        nlpSummary: 'Citizen submission processed through NLP entity extraction and geographical verification.',
-      },
-    };
+        lat: coordinates?.lat || 18.5204,
+        lng: coordinates?.lng || 73.8567,
+        mediaUrl: mediaPreview || undefined,
+      });
 
-    onAddReport(newReport);
-    setSubmittedReport(newReport);
+      onAddReport(report);
+      setSubmittedReport(report);
+    } catch (err: any) {
+      console.warn('[Citizen Submit] API error, falling back to local creation:', err);
+      setSubmissionError(err.message || 'Submission failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -362,10 +340,17 @@ export const CitizenReportingPage: React.FC<CitizenReportingPageProps> = ({
           <button
             type="submit"
             id="btn-submit-citizen-report"
-            className="w-full py-3.5 rounded-2xl bg-[#087E9B] hover:bg-[#07556B] text-white font-bold text-sm shadow-md shadow-[#087E9B]/20 transition-all flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className={`w-full py-3.5 rounded-2xl text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
+              isSubmitting
+                ? 'bg-[#607B86] cursor-not-allowed opacity-80'
+                : 'bg-[#087E9B] hover:bg-[#07556B] shadow-[#087E9B]/20'
+            }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Submit Report for Automated Verification</span>
+            <Sparkles className={`w-4 h-4 ${isSubmitting ? 'animate-spin' : ''}`} />
+            <span>
+              {isSubmitting ? 'Running Multi-Modal AI Sensor Verification...' : 'Submit Report for Automated Verification'}
+            </span>
           </button>
         </form>
       )}

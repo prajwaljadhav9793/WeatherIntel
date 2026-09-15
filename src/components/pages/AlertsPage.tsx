@@ -13,9 +13,10 @@ import {
   ChevronRight,
   Info,
 } from 'lucide-react';
+import { useWeather } from '../../context/WeatherContext';
 
 export const AlertsPage: React.FC = () => {
-  const [alerts, setAlerts] = useState<WeatherAlert[]>(MOCK_ALERTS);
+  const { alerts } = useWeather();
   const [selectedSeverity, setSelectedSeverity] = useState<AlertSeverity | 'All'>('All');
   const [actionNotification, setActionNotification] = useState<string | null>(null);
 

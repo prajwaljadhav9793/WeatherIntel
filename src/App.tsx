@@ -10,6 +10,7 @@ import { MOCK_REPORTS } from './data/mockData';
 import { Navbar } from './components/common/Navbar';
 import { MobileNavigation } from './components/common/MobileNavigation';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { WeatherProvider, useWeather } from './context/WeatherContext';
 import { Sun, Moon } from 'lucide-react';
 
 // Page components
@@ -32,34 +33,20 @@ import { AuthModalOrPage } from './components/pages/AuthModalOrPage';
 
 export function MainWeatherPlatform() {
   const { isDark, toggleTheme } = useTheme();
+  const {
+    reports,
+    selectedReport,
+    alerts,
+    filters,
+    isConnectedToStream,
+    handleFilterChange,
+    handleResetFilters,
+    setSelectedReport,
+    updateReportStatus,
+  } = useWeather();
   const [currentPage, setCurrentPage] = useState<ActivePage>('overview');
   const [userRole, setUserRole] = useState<UserRole>('IMD Analyst');
-  const [reports, setReports] = useState<WeatherReport[]>(MOCK_REPORTS);
-  const [selectedReport, setSelectedReport] = useState<WeatherReport | null>(MOCK_REPORTS[0]);
   const [showAuthModal, setShowAuthModal] = useState(false);
-
-  // Global filters
-  const [filters, setFilters] = useState<FilterState>({
-    dateRange: '24H',
-    event: 'All',
-    state: 'All',
-    district: 'All',
-    verification: 'All',
-  });
-
-  const handleFilterChange = (newFilters: Partial<FilterState>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
-
-  const handleResetFilters = () => {
-    setFilters({
-      dateRange: '24H',
-      event: 'All',
-      state: 'All',
-      district: 'All',
-      verification: 'All',
-    });
-  };
 
   const handleSelectReport = (report: WeatherReport) => {
     setSelectedReport(report);
@@ -71,20 +58,15 @@ export function MainWeatherPlatform() {
   };
 
   const handleAddReport = (newReport: WeatherReport) => {
-    setReports((prev) => [newReport, ...prev]);
     setSelectedReport(newReport);
   };
 
   const handleUpdateReportStatus = (
     reportId: string,
-    newStatus: VerificationStatus
+    newStatus: VerificationStatus,
+    justification?: string
   ) => {
-    setReports((prev) =>
-      prev.map((r) => (r.id === reportId ? { ...r, status: newStatus } : r))
-    );
-    if (selectedReport && selectedReport.id === reportId) {
-      setSelectedReport((prev) => (prev ? { ...prev, status: newStatus } : null));
-    }
+    updateReportStatus(reportId, newStatus, justification, userRole);
   };
 
   // Render Page
@@ -353,7 +335,10 @@ export function MainWeatherPlatform() {
 export default function App() {
   return (
     <ThemeProvider>
-      <MainWeatherPlatform />
+      <WeatherProvider>
+        <MainWeatherPlatform />
+      </WeatherProvider>
     </ThemeProvider>
   );
 }
+

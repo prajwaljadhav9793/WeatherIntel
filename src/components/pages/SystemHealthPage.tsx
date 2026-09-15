@@ -1,5 +1,5 @@
 import React from 'react';
-import { MOCK_SYSTEM_HEALTH } from '../../data/mockData';
+import { useWeather } from '../../context/WeatherContext';
 import {
   Server,
   Activity,
@@ -9,16 +9,19 @@ import {
   Radio,
   Clock,
   ShieldCheck,
+  Zap,
 } from 'lucide-react';
 
 export const SystemHealthPage: React.FC = () => {
+  const { systemHealth, slidingStats, isConnectedToStream } = useWeather();
+
   return (
     <div className="space-y-8 pb-14 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-[#2AA66F] animate-ping" />
+            <span className={`w-2 h-2 rounded-full ${isConnectedToStream ? 'bg-[#2AA66F] animate-ping' : 'bg-[#E7A23B]'}`} />
             <span className="text-xs font-bold uppercase tracking-wider text-[#087E9B]">
               Telemetry & Infrastructure Observability
             </span>
@@ -33,13 +36,55 @@ export const SystemHealthPage: React.FC = () => {
 
         <div className="px-3.5 py-1.5 rounded-xl bg-[#2AA66F]/10 border border-[#2AA66F]/30 text-[#2AA66F] text-xs font-semibold flex items-center gap-2 self-start sm:self-auto">
           <CheckCircle2 className="w-4 h-4" />
-          <span>All 6 Core Subsystems Operational</span>
+          <span>{isConnectedToStream ? 'Live SSE Stream Active' : 'Connecting to Stream...'}</span>
+        </div>
+      </div>
+
+      {/* Real-time Streaming Big-Data Metrics Card */}
+      <div className="p-5 rounded-3xl bg-gradient-to-r from-[#071F2C] to-[#0A2F45] text-white shadow-md space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[#5BBFEF]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5BBFEF]">
+              Live In-Memory Streaming Pipeline Metrics
+            </span>
+          </div>
+          <span className="text-[11px] text-[#8AAABA]">
+            node:sqlite WAL Mode • 64MB Cache • Zero-Lag Queue
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-3 rounded-2xl bg-white/10 border border-white/10">
+            <span className="text-[10px] text-[#8AAABA] block mb-1 uppercase font-semibold">5-Min Ingest</span>
+            <strong className="text-xl font-bold text-[#E0F2F7]">
+              {slidingStats?.window5mCount !== undefined ? slidingStats.window5mCount : 2} records
+            </strong>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/10 border border-white/10">
+            <span className="text-[10px] text-[#8AAABA] block mb-1 uppercase font-semibold">1-Hour Window</span>
+            <strong className="text-xl font-bold text-[#5BBFEF]">
+              {slidingStats?.window1hCount !== undefined ? slidingStats.window1hCount : 8} records
+            </strong>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/10 border border-white/10">
+            <span className="text-[10px] text-[#8AAABA] block mb-1 uppercase font-semibold">24-Hour Buffer</span>
+            <strong className="text-xl font-bold text-[#2AA66F]">
+              {slidingStats?.window24hCount !== undefined ? slidingStats.window24hCount : 24} records
+            </strong>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/10 border border-white/10">
+            <span className="text-[10px] text-[#8AAABA] block mb-1 uppercase font-semibold">Critical 1H Alerts</span>
+            <strong className="text-xl font-bold text-[#E45C5C]">
+              {slidingStats?.criticalEvents1h !== undefined ? slidingStats.criticalEvents1h : 0} triggered
+            </strong>
+          </div>
         </div>
       </div>
 
       {/* Grid of Micro Diagnostic Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {MOCK_SYSTEM_HEALTH.map((sys) => (
+        {systemHealth.map((sys) => (
           <div
             key={sys.id}
             className="glass-panel p-6 rounded-3xl border border-[#D8EAF0] shadow-2xs space-y-4 hover:border-[#5BBFEF]/60 transition-all"
