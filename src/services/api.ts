@@ -172,16 +172,34 @@ export async function loginUserApi(credentials: {
   email: string;
   password: string;
 }): Promise<{ user: UserProfile; token: string }> {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(credentials),
-  });
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.error || 'Failed to authenticate.');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+  try {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Server returned invalid response (HTTP ${res.status})`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to authenticate.');
+    }
+    return { user: data.user, token: data.token };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-  return { user: data.user, token: data.token };
 }
 
 export async function registerUserApi(userData: {
@@ -191,16 +209,34 @@ export async function registerUserApi(userData: {
   role: string;
   organization?: string;
 }): Promise<{ user: UserProfile; token: string }> {
-  const res = await fetch(`${BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData),
-  });
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.error || 'Failed to register account.');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+  try {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Server returned invalid response (HTTP ${res.status})`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to register account.');
+    }
+    return { user: data.user, token: data.token };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-  return { user: data.user, token: data.token };
 }
 
 export async function fetchUsersApi(): Promise<any[]> {

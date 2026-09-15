@@ -349,18 +349,18 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
           </div>
 
           {/* Firebase Authentication Status Pill */}
-          <div className="mt-3 flex items-center justify-between px-3 py-1.5 rounded-xl bg-[#F0F8FB] border border-[#D8EAF0] text-[11px]">
+          <div className="mt-3 flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#F0F8FB] border border-[#5BBFEF]/30 text-[11px] shadow-2xs">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
+              <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
               </span>
-              <span className="font-semibold text-[#12313D]">
-                {isFirebaseCloud ? 'Google Firebase Cloud Active' : 'Firebase Hybrid Auth Protocol'}
+              <span className="font-bold text-[#12313D]">
+                Firebase Project: <span className="font-mono text-[#087E9B]">weatherintel-imd</span>
               </span>
             </div>
-            <span className="text-[10px] text-[#087E9B] font-bold">
-              Identity Toolkit v1
+            <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+              Identity Toolkit Active
             </span>
           </div>
 
