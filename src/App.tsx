@@ -50,6 +50,7 @@ export function MainWeatherPlatform() {
   // If user is authenticated, default to overview; otherwise, default to landing
   const [currentPage, setCurrentPage] = useState<ActivePage>(() => (isAuthenticated ? 'overview' : 'landing'));
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
   // Sync page with auth state changes
   useEffect(() => {
@@ -67,15 +68,20 @@ export function MainWeatherPlatform() {
   const currentRole: UserRole = user?.role || 'IMD Analyst';
 
   // Navigation Guard: Protect internal modules
-  const handleNavigate = (page: ActivePage) => {
+  const handleNavigate = (page: ActivePage, mode: 'login' | 'register' = 'login') => {
     if (!isAuthenticated && page !== 'landing' && page !== 'auth') {
+      setAuthModalMode('login');
       setShowAuthModal(true);
       return;
+    }
+    if (page === 'auth') {
+      setAuthModalMode(mode);
     }
     setCurrentPage(page);
   };
 
-  const handleOpenAuth = (mode?: 'login' | 'register') => {
+  const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
+    setAuthModalMode(mode);
     setShowAuthModal(true);
   };
 
@@ -244,6 +250,7 @@ export function MainWeatherPlatform() {
       case 'auth':
         return (
           <AuthModalOrPage
+            initialMode={authModalMode}
             onSuccess={() => handleNavigate('overview')}
             onClose={() => handleNavigate(isAuthenticated ? 'overview' : 'landing')}
           />
@@ -304,6 +311,7 @@ export function MainWeatherPlatform() {
               <X className="w-4 h-4" />
             </button>
             <AuthModalOrPage
+              initialMode={authModalMode}
               onSuccess={() => {
                 setShowAuthModal(false);
                 handleNavigate('overview');

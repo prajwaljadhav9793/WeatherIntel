@@ -46,7 +46,7 @@ const DEFAULT_USER_PROFILES: Record<UserRole, UserProfile> = {
 
 interface NavbarProps {
   activePage: ActivePage;
-  onNavigate: (page: ActivePage) => void;
+  onNavigate: (page: ActivePage, mode?: 'login' | 'register') => void;
   userRole?: UserRole;
   userProfile?: UserProfile;
   onRoleChange?: (role: UserRole) => void;
@@ -341,7 +341,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 id="nav-register-btn"
-                onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('auth')}
+                onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('auth', 'register')}
                 className="hidden sm:flex px-3 py-2 rounded-xl bg-white hover:bg-[#F5FAFC] text-[#12313D] text-xs font-bold border border-[#D8EAF0] hover:border-[#087E9B] transition-all items-center gap-1.5 shadow-2xs"
               >
                 <UserPlus className="w-3.5 h-3.5 text-[#087E9B]" />

@@ -32,7 +32,7 @@ import {
 
 interface LandingPageProps {
   reports: WeatherReport[];
-  onNavigate: (page: ActivePage) => void;
+  onNavigate: (page: ActivePage, mode?: 'login' | 'register') => void;
   onSelectReport: (report: WeatherReport) => void;
   onOpenAuth?: (initialMode?: 'login' | 'register') => void;
 }
@@ -126,7 +126,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                   <button
                     id="hero-register-btn"
-                    onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('auth')}
+                    onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('auth', 'register')}
                     className="px-5 py-3.5 rounded-xl bg-white/90 hover:bg-white text-[#12313D] font-semibold text-sm border border-[#D8EAF0] hover:border-[#087E9B] transition-all shadow-2xs flex items-center gap-2"
                   >
                     <Users className="w-4 h-4 text-[#087E9B]" />
@@ -783,7 +783,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </button>
 
               <button
-                onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('auth')}
+                onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('auth', 'register')}
                 className="px-7 py-3.5 rounded-xl bg-white hover:bg-[#F5FAFC] text-[#12313D] font-bold text-sm border border-[#D8EAF0] transition-all flex items-center gap-2"
               >
                 <span>Create New Account</span>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserRole } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -16,29 +16,64 @@ import {
   Eye,
   EyeOff,
   Zap,
+  LogIn,
+  UserPlus,
+  Radio,
+  Check,
+  Globe,
+  Compass,
 } from 'lucide-react';
 
 interface AuthModalOrPageProps {
+  initialMode?: 'login' | 'register';
   onSuccess?: () => void;
   onClose?: () => void;
 }
 
 export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
+  initialMode = 'login',
   onSuccess,
   onClose,
 }) => {
   const { login, register, quickDemoLogin, isLoading } = useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('analyst.deshmukh@imd.gov.in');
   const [password, setPassword] = useState('imd12345');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('IMD Analyst');
-  const [organization, setOrganization] = useState('');
+  const [organization, setOrganization] = useState('India Meteorological Department (IMD)');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [successName, setSuccessName] = useState('');
+
+  // Keep internal mode in sync when initialMode prop updates
+  useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+      setErrorMessage(null);
+    }
+  }, [initialMode]);
+
+  // Adjust default organization and email sample when role changes in register mode
+  const handleRoleSelect = (newRole: UserRole) => {
+    setRole(newRole);
+    if (newRole === 'IMD Analyst') {
+      setOrganization('India Meteorological Department (IMD)');
+      if (!name) setName('Dr. Rajiv Sengupta');
+      if (!email || email.includes('@')) setEmail('analyst.sengupta@imd.gov.in');
+    } else if (newRole === 'Admin') {
+      setOrganization('State Disaster Management Authority (SDMA)');
+      if (!name) setName('Director Ananya Sen');
+      if (!email || email.includes('@')) setEmail('director.sdma@gov.in');
+    } else {
+      setOrganization('Citizen Weather Observer Network');
+      if (!name) setName('Kavita Nair');
+      if (!email || email.includes('@')) setEmail('kavita.nair@gmail.com');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,15 +96,15 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
     setErrorMessage(null);
 
     if (!name.trim()) {
-      setErrorMessage('Please provide your full name.');
+      setErrorMessage('Please enter your full name & designation.');
       return;
     }
-    if (!email.trim()) {
-      setErrorMessage('Please provide a valid email address.');
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMessage('Please enter a valid official or personal email address.');
       return;
     }
     if (password.length < 6) {
-      setErrorMessage('Password must contain at least 6 characters.');
+      setErrorMessage('Password must be at least 6 characters long.');
       return;
     }
 
@@ -88,7 +123,7 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
         if (onClose) onClose();
       }, 900);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed. Email may already be in use.');
+      setErrorMessage(err.message || 'Registration failed. An account with this email already exists.');
     }
   };
 
@@ -107,102 +142,171 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
     }
   };
 
+  // Password strength helper
+  const getPasswordStrength = () => {
+    if (!password) return { label: 'None', score: 0, color: 'bg-gray-200' };
+    if (password.length < 6) return { label: 'Too short', score: 1, color: 'bg-red-500' };
+    if (password.length < 8) return { label: 'Medium', score: 2, color: 'bg-amber-500' };
+    return { label: 'Strong', score: 3, color: 'bg-emerald-500' };
+  };
+
+  const strength = getPasswordStrength();
+
   return (
     <div className="max-w-4xl mx-auto glass-panel rounded-3xl border border-[#D8EAF0] shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 relative animate-in fade-in zoom-in-95 duration-200">
-      {/* Left Atmospheric Government Protocol Panel */}
-      <div className="md:col-span-5 atmospheric-bg p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#D8EAF0] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#5BBFEF]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-[#D8EAF0] text-[11px] font-bold text-[#07556B]">
-            <span className="w-2 h-2 rounded-full bg-[#25BFA5] animate-ping" />
-            <span>National Secure Gateway</span>
+      {/* LEFT ATMOSPHERIC COMMAND PANEL */}
+      <div className="md:col-span-5 atmospheric-bg p-6 sm:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#D8EAF0] relative overflow-hidden">
+        {/* Animated Radar Pulse concentric circles */}
+        <div className="absolute top-1/4 -right-16 w-72 h-72 rounded-full border border-[#5BBFEF]/30 pointer-events-none animate-ping opacity-25" />
+        <div className="absolute -top-12 -left-12 w-64 h-64 bg-[#5BBFEF]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 right-0 w-64 h-64 bg-[#087E9B]/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-5">
+          {/* Official Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 border border-[#D8EAF0] text-[11px] font-bold text-[#07556B] shadow-2xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#25BFA5] animate-pulse" />
+            <span>Official IMD & MoES Gateway</span>
           </div>
 
           <div>
-            <h2 className="text-2xl font-extrabold text-[#12313D] tracking-tight leading-snug">
+            <h2 className="text-2xl sm:text-3xl font-black text-[#12313D] tracking-tight leading-snug">
               WEATHERINTEL <br />
               <span className="text-[#087E9B]">INDIA PORTAL</span>
             </h2>
-            <p className="text-xs text-[#607B86] mt-2 leading-relaxed">
-              Unified Big Data Meteorological Intelligence & Real-Time AI Verification Platform.
+            <p className="text-xs text-[#607B86] mt-2 leading-relaxed font-medium">
+              National Big Data Meteorological Ingestion, AI Verification & Disaster Alerting Grid.
             </p>
           </div>
 
-          {/* Persona Permissions Guide */}
-          <div className="space-y-2.5 pt-4 text-xs">
-            <div className="font-bold text-[#12313D] uppercase tracking-wider text-[10px] text-[#087E9B]">
-              Role Access Matrix
+          {/* Interactive Role Matrix Cards */}
+          <div className="space-y-2.5 pt-2 text-xs">
+            <div className="font-bold text-[#12313D] uppercase tracking-wider text-[10px] text-[#087E9B] flex items-center gap-1">
+              <Compass className="w-3.5 h-3.5" />
+              <span>Role Permissions Matrix</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/60 border border-[#D8EAF0]/80">
-              <div className="font-semibold text-[#12313D] flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-[#087E9B]" />
-                <span>IMD Meteorologist / Analyst</span>
+
+            <div
+              onClick={() => mode === 'register' && handleRoleSelect('IMD Analyst')}
+              className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                role === 'IMD Analyst' && mode === 'register'
+                  ? 'bg-white border-[#087E9B] shadow-sm ring-1 ring-[#087E9B]'
+                  : 'bg-white/70 hover:bg-white border-[#D8EAF0]'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-xs text-[#12313D] flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-[#EAF7FD] text-[#087E9B] flex items-center justify-center font-bold text-xs">
+                    <Shield className="w-3.5 h-3.5" />
+                  </div>
+                  <span>IMD Analyst / Meteorologist</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF7FD] text-[#087E9B]">
+                  Duty Officer
+                </span>
               </div>
-              <p className="text-[11px] text-[#607B86] mt-0.5">
-                Full AI triage, ground-truth sensor overrides, duplicate clustering, and verification.
+              <p className="text-[11px] text-[#607B86] mt-1.5 leading-relaxed pl-8">
+                Triage AI flags, verify ground reports, AWS sensor cross-checks, and duplicate clustering.
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/60 border border-[#D8EAF0]/80">
-              <div className="font-semibold text-[#12313D] flex items-center gap-1.5">
-                <Building className="w-3.5 h-3.5 text-[#E7A23B]" />
-                <span>NDMA National Admin</span>
+
+            <div
+              onClick={() => mode === 'register' && handleRoleSelect('Admin')}
+              className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                role === 'Admin' && mode === 'register'
+                  ? 'bg-white border-[#E7A23B] shadow-sm ring-1 ring-[#E7A23B]'
+                  : 'bg-white/70 hover:bg-white border-[#D8EAF0]'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-xs text-[#12313D] flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-[#FEF9E7] text-[#E7A23B] flex items-center justify-center font-bold text-xs">
+                    <Building className="w-3.5 h-3.5" />
+                  </div>
+                  <span>NDMA / SDMA Admin</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FEF9E7] text-[#E7A23B]">
+                  Command
+                </span>
               </div>
-              <p className="text-[11px] text-[#607B86] mt-0.5">
-                Command dashboard, CAP disaster alerts, source ingestion governance, audit trails.
+              <p className="text-[11px] text-[#607B86] mt-1.5 leading-relaxed pl-8">
+                Dispatch Common Alerting Protocol (CAP) emergency warnings, manage data feeds & audit logs.
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white/60 border border-[#D8EAF0]/80">
-              <div className="font-semibold text-[#12313D] flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-[#2AA66F]" />
-                <span>Citizen Field Observer</span>
+
+            <div
+              onClick={() => mode === 'register' && handleRoleSelect('Citizen')}
+              className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                role === 'Citizen' && mode === 'register'
+                  ? 'bg-white border-[#2AA66F] shadow-sm ring-1 ring-[#2AA66F]'
+                  : 'bg-white/70 hover:bg-white border-[#D8EAF0]'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-xs text-[#12313D] flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-[#EAFBF3] text-[#2AA66F] flex items-center justify-center font-bold text-xs">
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Citizen Field Observer</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAFBF3] text-[#2AA66F]">
+                  Public
+                </span>
               </div>
-              <p className="text-[11px] text-[#607B86] mt-0.5">
-                Geo-tagged weather reporting, Doppler radar access, live alerts, and community feeds.
+              <p className="text-[11px] text-[#607B86] mt-1.5 leading-relaxed pl-8">
+                Submit geo-tagged weather observations, access interactive Doppler radar & local alerts.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Security badge */}
-        <div className="relative z-10 pt-6 border-t border-[#D8EAF0]/60 text-[11px] text-[#607B86] flex items-center gap-2">
-          <Lock className="w-3.5 h-3.5 text-[#25BFA5]" />
-          <span>MoES & IMD Encrypted Protocol</span>
+        {/* Bottom Gateway Security Details */}
+        <div className="relative z-10 pt-6 border-t border-[#D8EAF0]/80 text-[11px] text-[#607B86] flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-[#25BFA5]" />
+            <span>256-Bit Encrypted Session</span>
+          </div>
+          <span className="font-mono text-[10px] text-[#07556B]">v2.4.1 SECURE</span>
         </div>
       </div>
 
-      {/* Right Interactive Auth Form Panel */}
+      {/* RIGHT AUTHENTICATION & REGISTRATION FORM PANEL */}
       <div className="md:col-span-7 p-6 sm:p-8 bg-white flex flex-col justify-between">
         <div>
-          {/* Header & Mode Switcher */}
+          {/* Top Header & Mode Toggle */}
           <div className="flex items-center justify-between pb-4 border-b border-[#D8EAF0]">
-            <div className="flex items-center gap-1 p-1 bg-[#F0F8FB] rounded-xl border border-[#D8EAF0]">
+            <div className="flex items-center gap-1 p-1 bg-[#F0F8FB] rounded-2xl border border-[#D8EAF0]">
               <button
                 type="button"
+                id="auth-tab-signin"
                 onClick={() => {
                   setMode('login');
                   setErrorMessage(null);
                 }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                   mode === 'login'
-                    ? 'bg-[#087E9B] text-white shadow-xs'
+                    ? 'bg-[#087E9B] text-white shadow-md'
                     : 'text-[#607B86] hover:text-[#12313D]'
                 }`}
               >
-                Sign In
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
               </button>
+
               <button
                 type="button"
+                id="auth-tab-register"
                 onClick={() => {
                   setMode('register');
                   setErrorMessage(null);
                 }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                   mode === 'register'
-                    ? 'bg-[#087E9B] text-white shadow-xs'
+                    ? 'bg-[#087E9B] text-white shadow-md'
                     : 'text-[#607B86] hover:text-[#12313D]'
                 }`}
               >
-                Create Account
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Create Account</span>
               </button>
             </div>
 
@@ -210,55 +314,77 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs font-semibold text-[#607B86] hover:text-[#12313D] px-2 py-1"
+                className="text-xs font-bold text-[#607B86] hover:text-[#12313D] px-2.5 py-1.5 rounded-xl hover:bg-[#F5FAFC] transition-colors"
               >
-                Back to Landing
+                Exit
               </button>
             )}
           </div>
 
-          {/* 1-Click Quick Demo Bar */}
-          <div className="mt-4 p-3 rounded-2xl bg-[#EAF7FD]/80 border border-[#5BBFEF]/40">
+          {/* Subtitle Banner */}
+          <div className="mt-3">
+            <h3 className="text-lg font-black text-[#12313D]">
+              {mode === 'login' ? 'Sign In to Your Station' : 'Register Official Account'}
+            </h3>
+            <p className="text-xs text-[#607B86] mt-0.5">
+              {mode === 'login'
+                ? 'Authenticate to unlock the live radar grid, AI verification, and operational modules.'
+                : 'Join the national network as a meteorologist, disaster administrator, or citizen observer.'}
+            </p>
+          </div>
+
+          {/* Instant 1-Click Demo Personas Bar */}
+          <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-r from-[#EAF7FD] to-[#F2FAFD] border border-[#5BBFEF]/40 shadow-2xs">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-[#07556B] flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5 text-[#F5B041]" />
-                Instant Demo Evaluation (1-Click Access)
+              <span className="text-[11px] font-bold text-[#07556B] flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-[#F5B041] fill-[#F5B041]" />
+                Instant 1-Click Demo Evaluation:
               </span>
-              <span className="text-[10px] text-[#607B86]">No typing required</span>
+              <span className="text-[10px] font-semibold text-[#087E9B] bg-white px-2 py-0.5 rounded-full border border-[#D8EAF0]">
+                Instant Access
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
+                id="demo-login-analyst"
                 disabled={isLoading}
                 onClick={() => handleQuickDemo('IMD Analyst')}
-                className="px-2 py-2 rounded-xl bg-white border border-[#D8EAF0] hover:border-[#087E9B] hover:bg-[#EAF7FD] text-left transition-all group"
+                className="p-2.5 rounded-xl bg-white border border-[#D8EAF0] hover:border-[#087E9B] hover:shadow-sm text-left transition-all group"
               >
-                <div className="text-[11px] font-bold text-[#12313D] group-hover:text-[#087E9B]">
-                  IMD Analyst
+                <div className="text-[11px] font-extrabold text-[#12313D] group-hover:text-[#087E9B] flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-[#087E9B]" />
+                  <span>IMD Analyst</span>
                 </div>
-                <div className="text-[9px] text-[#607B86] truncate">Duty Meteorologist</div>
+                <div className="text-[9px] text-[#607B86] truncate mt-0.5 font-medium">Duty Officer</div>
               </button>
+
               <button
                 type="button"
+                id="demo-login-admin"
                 disabled={isLoading}
                 onClick={() => handleQuickDemo('Admin')}
-                className="px-2 py-2 rounded-xl bg-white border border-[#D8EAF0] hover:border-[#E7A23B] hover:bg-[#FEF9E7] text-left transition-all group"
+                className="p-2.5 rounded-xl bg-white border border-[#D8EAF0] hover:border-[#E7A23B] hover:shadow-sm text-left transition-all group"
               >
-                <div className="text-[11px] font-bold text-[#12313D] group-hover:text-[#E7A23B]">
-                  NDMA Admin
+                <div className="text-[11px] font-extrabold text-[#12313D] group-hover:text-[#E7A23B] flex items-center gap-1">
+                  <Building className="w-3 h-3 text-[#E7A23B]" />
+                  <span>NDMA Admin</span>
                 </div>
-                <div className="text-[9px] text-[#607B86] truncate">National Command</div>
+                <div className="text-[9px] text-[#607B86] truncate mt-0.5 font-medium">National Command</div>
               </button>
+
               <button
                 type="button"
+                id="demo-login-citizen"
                 disabled={isLoading}
                 onClick={() => handleQuickDemo('Citizen')}
-                className="px-2 py-2 rounded-xl bg-white border border-[#D8EAF0] hover:border-[#2AA66F] hover:bg-[#EAFBF3] text-left transition-all group"
+                className="p-2.5 rounded-xl bg-white border border-[#D8EAF0] hover:border-[#2AA66F] hover:shadow-sm text-left transition-all group"
               >
-                <div className="text-[11px] font-bold text-[#12313D] group-hover:text-[#2AA66F]">
-                  Citizen
+                <div className="text-[11px] font-extrabold text-[#12313D] group-hover:text-[#2AA66F] flex items-center gap-1">
+                  <Users className="w-3 h-3 text-[#2AA66F]" />
+                  <span>Citizen</span>
                 </div>
-                <div className="text-[9px] text-[#607B86] truncate">Field Reporter</div>
+                <div className="text-[9px] text-[#607B86] truncate mt-0.5 font-medium">Field Observer</div>
               </button>
             </div>
           </div>
@@ -271,77 +397,132 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
             </div>
           )}
 
-          {/* Success screen */}
+          {/* Success Screen */}
           {isSuccess ? (
-            <div className="my-8 p-6 rounded-2xl bg-[#2AA66F]/10 border border-[#2AA66F]/30 text-center space-y-2 animate-in zoom-in-95">
-              <CheckCircle className="w-10 h-10 text-[#2AA66F] mx-auto animate-bounce" />
-              <h4 className="font-bold text-base text-[#12313D]">
-                Authentication Successful!
+            <div className="my-8 p-8 rounded-2xl bg-[#2AA66F]/10 border border-[#2AA66F]/30 text-center space-y-3 animate-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 rounded-full bg-[#2AA66F]/20 text-[#2AA66F] flex items-center justify-center mx-auto ring-8 ring-[#2AA66F]/10">
+                <CheckCircle className="w-8 h-8 text-[#2AA66F] animate-bounce" />
+              </div>
+              <h4 className="font-extrabold text-lg text-[#12313D]">
+                Authentication Verified!
               </h4>
-              <p className="text-xs text-[#607B86]">
-                Welcome to WeatherIntel India. Unlocking modules & real-time telemetry...
+              <p className="text-xs text-[#607B86] max-w-sm mx-auto">
+                Welcome to WeatherIntel India, <span className="font-bold text-[#12313D]">{successName}</span>. Unlocking live Doppler telemetry, AI verification, and modules...
               </p>
+              <div className="w-32 h-1.5 bg-[#2AA66F]/20 rounded-full mx-auto overflow-hidden">
+                <div className="h-full bg-[#2AA66F] animate-pulse rounded-full w-full" />
+              </div>
             </div>
           ) : mode === 'login' ? (
-            /* --- SIGN IN FORM --- */
+            /* ========================================================================= */
+            /* SIGN IN FORM                                                              */
+            /* ========================================================================= */
             <form onSubmit={handleLogin} className="mt-4 space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-[#12313D] mb-1">
-                  Official Identifier / Email
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-[#12313D]">
+                    Official Identifier / Email
+                  </label>
+                  <div className="flex gap-1.5 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('analyst.deshmukh@imd.gov.in');
+                        setPassword('imd12345');
+                      }}
+                      className="text-[#087E9B] hover:underline font-semibold"
+                    >
+                      Fill IMD
+                    </button>
+                    <span className="text-gray-300">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('commissioner@ndma.gov.in');
+                        setPassword('admin12345');
+                      }}
+                      className="text-[#087E9B] hover:underline font-semibold"
+                    >
+                      Fill Admin
+                    </button>
+                    <span className="text-gray-300">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail('aarav.sharma@gmail.com');
+                        setPassword('citizen12345');
+                      }}
+                      className="text-[#087E9B] hover:underline font-semibold"
+                    >
+                      Fill Citizen
+                    </button>
+                  </div>
+                </div>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#607B86] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-[#607B86] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     required
+                    id="login-email-input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@imd.gov.in"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
+                    className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] focus:ring-2 focus:ring-[#5BBFEF]/20 text-[#12313D] font-medium transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-[#12313D]">
-                    Password / Security Key
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('analyst.deshmukh@imd.gov.in');
-                      setPassword('imd12345');
-                    }}
-                    className="text-[10px] text-[#087E9B] hover:underline"
-                  >
-                    Use default test key
-                  </button>
-                </div>
+                <label className="block text-xs font-bold text-[#12313D] mb-1">
+                  Security Key / Password
+                </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#607B86] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-[#607B86] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    id="login-password-input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-9 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
+                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] focus:ring-2 focus:ring-[#5BBFEF]/20 text-[#12313D] font-medium transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607B86] hover:text-[#12313D]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#607B86] hover:text-[#12313D] transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
+              {/* Remember session checkbox */}
+              <div className="flex items-center justify-between text-xs pt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-[#607B86] hover:text-[#12313D]">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded border-[#D8EAF0] text-[#087E9B] focus:ring-[#087E9B]"
+                  />
+                  <span>Remember session on this device</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setMode('register')}
+                  className="font-bold text-[#087E9B] hover:text-[#07556B] hover:underline"
+                >
+                  Need an account?
+                </button>
+              </div>
+
               <button
                 type="submit"
+                id="login-submit-btn"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 rounded-xl bg-[#087E9B] hover:bg-[#07556B] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                className="w-full mt-2 py-3.5 rounded-xl bg-[#087E9B] hover:bg-[#07556B] text-white font-bold text-xs shadow-md shadow-[#087E9B]/25 transition-all flex items-center justify-center gap-2 hover:gap-3"
               >
                 {isLoading ? (
                   <>
@@ -350,130 +531,220 @@ export const AuthModalOrPage: React.FC<AuthModalOrPageProps> = ({
                   </>
                 ) : (
                   <>
-                    <span>Authenticate & Access Platform</span>
+                    <span>Sign In & Enter Command Platform</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
+
+              <div className="text-center pt-2">
+                <span className="text-xs text-[#607B86]">Don't have an official account? </span>
+                <button
+                  type="button"
+                  onClick={() => setMode('register')}
+                  className="text-xs font-bold text-[#087E9B] hover:underline"
+                >
+                  Create one now
+                </button>
+              </div>
             </form>
           ) : (
-            /* --- REGISTER FORM --- */
-            <form onSubmit={handleRegister} className="mt-4 space-y-3">
+            /* ========================================================================= */
+            /* CREATE ACCOUNT / REGISTER FORM                                            */
+            /* ========================================================================= */
+            <form onSubmit={handleRegister} className="mt-4 space-y-3.5">
+              {/* Visual Role Category Selection (Cards) */}
               <div>
-                <label className="block text-xs font-semibold text-[#12313D] mb-1">
+                <label className="block text-xs font-bold text-[#12313D] mb-1.5">
+                  Select Your Operational Role Category
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSelect('Citizen')}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      role === 'Citizen'
+                        ? 'bg-[#EAFBF3] border-[#2AA66F] shadow-2xs ring-1 ring-[#2AA66F]'
+                        : 'bg-[#F5FAFC] border-[#D8EAF0] hover:bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-[#12313D]">Citizen</span>
+                      {role === 'Citizen' && <Check className="w-3.5 h-3.5 text-[#2AA66F]" />}
+                    </div>
+                    <div className="text-[10px] text-[#607B86] mt-0.5 leading-tight">Field Reporter</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSelect('IMD Analyst')}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      role === 'IMD Analyst'
+                        ? 'bg-[#EAF7FD] border-[#087E9B] shadow-2xs ring-1 ring-[#087E9B]'
+                        : 'bg-[#F5FAFC] border-[#D8EAF0] hover:bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-[#12313D]">IMD Analyst</span>
+                      {role === 'IMD Analyst' && <Check className="w-3.5 h-3.5 text-[#087E9B]" />}
+                    </div>
+                    <div className="text-[10px] text-[#607B86] mt-0.5 leading-tight">Duty Officer</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRoleSelect('Admin')}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      role === 'Admin'
+                        ? 'bg-[#FEF9E7] border-[#E7A23B] shadow-2xs ring-1 ring-[#E7A23B]'
+                        : 'bg-[#F5FAFC] border-[#D8EAF0] hover:bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-[#12313D]">NDMA Admin</span>
+                      {role === 'Admin' && <Check className="w-3.5 h-3.5 text-[#E7A23B]" />}
+                    </div>
+                    <div className="text-[10px] text-[#607B86] mt-0.5 leading-tight">Command Authority</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Full Name & Designation */}
+              <div>
+                <label className="block text-xs font-bold text-[#12313D] mb-1">
                   Full Name & Designation
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 text-[#607B86] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 text-[#607B86] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     required
+                    id="register-name-input"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Dr. Rajesh Verma"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
+                    placeholder="e.g. Dr. Rajesh Verma (Lead Meteorologist)"
+                    className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] focus:ring-2 focus:ring-[#5BBFEF]/20 text-[#12313D] font-medium transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Email & Organization Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#12313D] mb-1">
+                  <label className="block text-xs font-bold text-[#12313D] mb-1">
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-[#607B86] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Mail className="w-4 h-4 text-[#607B86] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="email"
                       required
+                      id="register-email-input"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="user@organization.gov.in"
-                      className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
+                      placeholder="name@organization.gov.in"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] focus:ring-2 focus:ring-[#5BBFEF]/20 text-[#12313D] font-medium transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#12313D] mb-1">
-                    Role Category
+                  <label className="block text-xs font-bold text-[#12313D] mb-1">
+                    Affiliated Organization
                   </label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
-                  >
-                    <option value="Citizen">Citizen Field Observer</option>
-                    <option value="IMD Analyst">IMD Meteorologist / Analyst</option>
-                    <option value="Admin">NDMA / SDMA National Admin</option>
-                  </select>
+                  <div className="relative">
+                    <Building className="w-4 h-4 text-[#607B86] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      id="register-org-input"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                      placeholder="e.g. State Disaster Management Cell"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] focus:ring-2 focus:ring-[#5BBFEF]/20 text-[#12313D] font-medium transition-all"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Password & Strength Meter */}
               <div>
-                <label className="block text-xs font-semibold text-[#12313D] mb-1">
-                  Affiliated Organization / Department (Optional)
-                </label>
-                <div className="relative">
-                  <Building className="w-4 h-4 text-[#607B86] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    placeholder="e.g. Maharashtra State Disaster Cell"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
-                  />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-[#12313D]">
+                    Create Security Key / Password
+                  </label>
+                  {password && (
+                    <span className="text-[10px] font-bold text-[#607B86]">
+                      Strength: <strong className="text-[#12313D]">{strength.label}</strong>
+                    </span>
+                  )}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#12313D] mb-1">
-                  Create Security Password
-                </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#607B86] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-[#607B86] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    id="register-password-input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimum 6 characters"
-                    className="w-full pl-9 pr-9 py-2 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] text-[#12313D]"
+                    placeholder="Minimum 6 alphanumeric characters"
+                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-[#F5FAFC] rounded-xl border border-[#D8EAF0] focus:outline-none focus:border-[#087E9B] focus:ring-2 focus:ring-[#5BBFEF]/20 text-[#12313D] font-medium transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607B86] hover:text-[#12313D]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#607B86] hover:text-[#12313D] transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+
+                {/* Password strength mini bar */}
+                {password && (
+                  <div className="flex gap-1 mt-1.5 h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${strength.score >= 1 ? strength.color : 'bg-transparent'} w-1/3`} />
+                    <div className={`h-full rounded-full transition-all ${strength.score >= 2 ? strength.color : 'bg-transparent'} w-1/3`} />
+                    <div className={`h-full rounded-full transition-all ${strength.score >= 3 ? strength.color : 'bg-transparent'} w-1/3`} />
+                  </div>
+                )}
               </div>
 
               <button
                 type="submit"
+                id="register-submit-btn"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 rounded-xl bg-[#087E9B] hover:bg-[#07556B] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                className="w-full mt-2 py-3.5 rounded-xl bg-[#087E9B] hover:bg-[#07556B] text-white font-bold text-xs shadow-md shadow-[#087E9B]/25 transition-all flex items-center justify-center gap-2 hover:gap-3"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Registering Account...</span>
+                    <span>Registering Official Session...</span>
                   </>
                 ) : (
                   <>
-                    <span>Create Official Account & Enter</span>
+                    <span>Complete Registration & Access Platform</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
+
+              <div className="text-center pt-2">
+                <span className="text-xs text-[#607B86]">Already registered an account? </span>
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="text-xs font-bold text-[#087E9B] hover:underline"
+                >
+                  Sign In here
+                </button>
+              </div>
             </form>
           )}
         </div>
 
-        {/* Footer info */}
-        <div className="mt-4 pt-3 border-t border-[#D8EAF0] text-center text-[10px] text-[#607B86]">
-          By authenticating, you adhere to the National Geospatial Data Guidelines & IMD Telemetry Protocols.
+        {/* Security & Protocol Compliance Footer */}
+        <div className="mt-5 pt-3 border-t border-[#D8EAF0] flex items-center justify-between text-[10px] text-[#607B86]">
+          <span>IMD Meteorological Telemetry Standard</span>
+          <span className="font-semibold text-[#07556B]">MoES Verified Gateway</span>
         </div>
       </div>
     </div>
